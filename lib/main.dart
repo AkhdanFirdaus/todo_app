@@ -1,9 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
+import 'package:hive/hive.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+
+import 'package:todo_app/data/models/todo.dart';
 import 'package:todo_app/ui/alert/confirm_dialog.dart';
 import 'package:todo_app/ui/form/form_add_list_dialog.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Hive.initFlutter();
+  Hive.registerAdapter<Todo?>(TodoAdapter());
+  await Hive.openBox<Todo?>('todoBox');
+
   runApp(const MyApp());
 }
 
@@ -31,6 +39,7 @@ class MyTodo extends StatefulWidget {
 
 class _MyTodoState extends State<MyTodo> {
   bool isChecked = false;
+  int selected = -1;
 
   @override
   Widget build(BuildContext context) {
@@ -177,219 +186,168 @@ class _MyTodoState extends State<MyTodo> {
                       Icons.search,
                       color: Color(0xffBABFC7),
                     ),
+                    isDense: true,
+                    contentPadding: const EdgeInsets.all(12),
                   ),
                 ),
               ),
-              SingleChildScrollView(
-                child: Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 24, vertical: 8),
-                      child: Container(
-                        height: 64,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          border: Border(
-                            left: BorderSide(
-                              color: Color(0xff4044C9),
-                              width: 4,
-                            ),
+              Expanded(
+                child: ValueListenableBuilder(
+                  valueListenable: Hive.box<Todo?>('todoBox').listenable(),
+                  builder: (context, Box<Todo?> box, widget) {
+                    if (box.values.isEmpty) {
+                      return Center(child: Text("Todo Is Empty"));
+                    }
+                    return ListView.builder(
+                      itemCount: box.values.length,
+                      itemBuilder: (context, index) {
+                        final todo = box.getAt(index)!;
+                        return Padding(
+                          key: Key('item-$index'),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 8,
                           ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Color.fromRGBO(64, 68, 201, 0.4),
-                              blurRadius: 6,
-                              spreadRadius: 0,
-                              offset: Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          children: [
-                            Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 8),
-                              child:
-                                  Checkbox(value: true, onChanged: (value) {}),
-                            ),
-                            Expanded(
-                              child: Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 10),
-                                child: Column(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text("Learn Flutter",
-                                        style: TextStyle(
-                                            fontWeight: FontWeight.w700,
-                                            fontSize: 18)),
-                                    Text("I'm goin' to learn flutter")
-                                  ],
-                                ),
-                              ),
-                            ),
-                            Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 24),
-                              child: PopupMenuButton(
-                                child: Icon(Icons.more_vert,
-                                    color: Color(0xff82868B)),
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8)),
-                                itemBuilder: (context) => [
-                                  PopupMenuItem(
-                                    child: Row(
-                                      children: [
-                                        Padding(
-                                          padding:
-                                              const EdgeInsets.only(right: 8),
-                                          child: Icon(
-                                            Icons.edit_outlined,
-                                            color: Color(0xffFFA800),
-                                          ),
+                          child: GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                selected = selected == index ? -1 : index;
+                              });
+                            },
+                            child: Container(
+                              height: 64,
+                              decoration: selected == index
+                                  ? BoxDecoration(
+                                      color: Colors.white,
+                                      border: Border(
+                                        left: BorderSide(
+                                          color: Color(0xff4044C9),
+                                          width: 4,
                                         ),
-                                        Text(
-                                          "Edit",
-                                          style: TextStyle(
-                                            color: Color(0xffFFA800),
-                                          ),
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color:
+                                              Color.fromRGBO(64, 68, 201, 0.4),
+                                          blurRadius: 6,
+                                          spreadRadius: 0,
+                                          offset: Offset(0, 2),
                                         ),
                                       ],
+                                    )
+                                  : BoxDecoration(
+                                      color: Colors.white,
+                                      border: Border(
+                                        left: BorderSide(
+                                          color: Color(0xffBABFC7),
+                                          width: 4,
+                                        ),
+                                      ),
+                                    ),
+                              child: Row(
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8),
+                                    child: Checkbox(
+                                      value: todo.completed,
+                                      onChanged: (value) {
+                                        Box<Todo?> todoBox =
+                                            Hive.box<Todo?>('todoBox');
+                                        todoBox.putAt(
+                                            index, todo.toggleCompleted());
+                                      },
                                     ),
                                   ),
-                                  PopupMenuItem(
-                                    child: GestureDetector(
-                                      onTap: () => confirmDialog(context),
-                                      child: Row(
+                                  Expanded(
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 10),
+                                      child: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
-                                          Padding(
-                                            padding:
-                                                const EdgeInsets.only(right: 8),
-                                            child: Icon(
-                                              Icons.delete,
-                                              color: Color(0xffF64E80),
-                                            ),
-                                          ),
                                           Text(
-                                            "Delete",
+                                            todo.title,
                                             style: TextStyle(
-                                              color: Color(0xffF64E80),
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 18,
                                             ),
                                           ),
+                                          Text(todo.body),
                                         ],
                                       ),
                                     ),
-                                  )
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 24, vertical: 8),
-                      child: Container(
-                        height: 64,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          border: Border(
-                            left: BorderSide(
-                              color: Color(0xffBABFC7),
-                              width: 4,
-                            ),
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 8),
-                              child:
-                                  Checkbox(value: false, onChanged: (value) {}),
-                            ),
-                            Expanded(
-                              child: Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 10),
-                                child: Column(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text("Learn Flutter",
-                                        style: TextStyle(
-                                            fontWeight: FontWeight.w700,
-                                            fontSize: 18)),
-                                    Text("I'm goin' to learn flutter")
-                                  ],
-                                ),
-                              ),
-                            ),
-                            Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 24),
-                              child: PopupMenuButton(
-                                child: Icon(Icons.more_vert,
-                                    color: Color(0xff82868B)),
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8)),
-                                itemBuilder: (context) => [
-                                  PopupMenuItem(
-                                    child: Row(
-                                      children: [
-                                        Padding(
-                                          padding:
-                                              const EdgeInsets.only(right: 8),
-                                          child: Icon(
-                                            Icons.edit_outlined,
-                                            color: Color(0xffFFA800),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 24),
+                                    child: PopupMenuButton(
+                                      child: Icon(
+                                        Icons.more_vert,
+                                        color: Color(0xff82868B),
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      itemBuilder: (context) => [
+                                        PopupMenuItem(
+                                          child: Row(
+                                            children: [
+                                              Padding(
+                                                padding: const EdgeInsets.only(
+                                                    right: 8),
+                                                child: Icon(
+                                                  Icons.edit_outlined,
+                                                  color: Color(0xffFFA800),
+                                                ),
+                                              ),
+                                              Text(
+                                                "Edit",
+                                                style: TextStyle(
+                                                  color: Color(0xffFFA800),
+                                                ),
+                                              ),
+                                            ],
                                           ),
                                         ),
-                                        Text(
-                                          "Edit",
-                                          style: TextStyle(
-                                            color: Color(0xffFFA800),
+                                        PopupMenuItem(
+                                          child: GestureDetector(
+                                            onTap: () => confirmDialog(context),
+                                            child: Row(
+                                              children: [
+                                                Padding(
+                                                  padding:
+                                                      const EdgeInsets.only(
+                                                          right: 8),
+                                                  child: Icon(
+                                                    Icons.delete,
+                                                    color: Color(0xffF64E80),
+                                                  ),
+                                                ),
+                                                Text(
+                                                  "Delete",
+                                                  style: TextStyle(
+                                                    color: Color(0xffF64E80),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
                                           ),
-                                        ),
+                                        )
                                       ],
                                     ),
                                   ),
-                                  PopupMenuItem(
-                                    child: GestureDetector(
-                                      onTap: () => confirmDialog(context),
-                                      child: Row(
-                                        children: [
-                                          Padding(
-                                            padding:
-                                                const EdgeInsets.only(right: 8),
-                                            child: Icon(
-                                              Icons.delete,
-                                              color: Color(0xffF64E80),
-                                            ),
-                                          ),
-                                          Text(
-                                            "Delete",
-                                            style: TextStyle(
-                                              color: Color(0xffF64E80),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  )
                                 ],
                               ),
                             ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
+                          ),
+                        );
+                      },
+                    );
+                  },
                 ),
               ),
             ],

@@ -19,4 +19,19 @@ class Todo extends HiveObject {
     required this.body,
     this.completed = false,
   });
+
+  Todo toggleCompleted() => copyWith(completed: !completed);
+
+  Todo copyWith({
+    String? title,
+    String? body,
+    bool? completed,
+  }) {
+    return Todo(
+      uid: uid,
+      title: title ?? this.title,
+      body: body ?? this.body,
+      completed: completed ?? this.completed,
+    );
+  }
 }
