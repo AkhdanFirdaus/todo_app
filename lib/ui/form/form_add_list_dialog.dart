@@ -4,7 +4,17 @@ import 'package:todo_app/data/todo.dart';
 import 'package:todo_app/ui/alert/success_added_dialog.dart';
 import 'package:uuid/uuid.dart';
 
-void formAddListDialog(BuildContext context, [Todo? todo]) => showDialog(
+void formAddListDialog(BuildContext context) => showDialog(
+      context: context,
+      builder: (BuildContext context) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: FormAddList(),
+      ),
+    );
+
+void formEditListDialog(BuildContext context, Todo todo) => showDialog(
       context: context,
       builder: (BuildContext context) => Dialog(
         shape: RoundedRectangleBorder(
@@ -33,6 +43,40 @@ class _FormAddListState extends State<FormAddList> {
       titleController.text = widget.todo!.title;
       bodyController.text = widget.todo!.body;
     }
+  }
+
+  void submit() {
+    Box<Todo?> todoBox = Hive.box<Todo?>('todoBox');
+
+    Future.sync(() {
+      if (widget.todo != null) {
+        for (int i = 0; i < todoBox.length; i++) {
+          if (todoBox.getAt(i)!.uid == widget.todo!.uid) {
+            todoBox.putAt(
+              i,
+              Todo(
+                uid: widget.todo!.uid,
+                title: titleController.text,
+                body: bodyController.text,
+                completed: widget.todo?.completed ?? false,
+              ),
+            );
+          }
+        }
+      } else {
+        todoBox.add(
+          Todo(
+            uid: Uuid().v1(),
+            title: titleController.text,
+            body: bodyController.text,
+          ),
+        );
+      }
+    }).then((value) {
+      Navigator.pop(context);
+    }).whenComplete(() {
+      successAddedDialog(context);
+    });
   }
 
   @override
@@ -154,20 +198,7 @@ class _FormAddListState extends State<FormAddList> {
               ),
               SizedBox(width: 8),
               ElevatedButton(
-                onPressed: () {
-                  Box<Todo?> todoBox = Hive.box<Todo?>('todoBox');
-                  todoBox
-                      .add(
-                    Todo(
-                      uid: Uuid().v1(),
-                      title: titleController.text,
-                      body: bodyController.text,
-                    ),
-                  )
-                      .then((value) {
-                    successAddedDialog(context);
-                  });
-                },
+                onPressed: submit,
                 child: Text("Submit Data"),
                 style: ElevatedButton.styleFrom(
                   shape: RoundedRectangleBorder(

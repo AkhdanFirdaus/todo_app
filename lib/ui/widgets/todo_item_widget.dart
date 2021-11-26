@@ -91,23 +91,25 @@ class TodoItemWidget extends StatelessWidget {
               ),
               itemBuilder: (context) => [
                 PopupMenuItem(
-                  onTap: () => formAddListDialog(context, todo),
-                  child: Row(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: Icon(
-                          Icons.edit_outlined,
-                          color: Color(0xffFFA800),
+                  child: GestureDetector(
+                    onTap: () => formEditListDialog(context, todo),
+                    child: Row(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: Icon(
+                            Icons.edit_outlined,
+                            color: Color(0xffFFA800),
+                          ),
                         ),
-                      ),
-                      Text(
-                        "Edit",
-                        style: TextStyle(
-                          color: Color(0xffFFA800),
+                        Text(
+                          "Edit",
+                          style: TextStyle(
+                            color: Color(0xffFFA800),
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
                 PopupMenuItem(
