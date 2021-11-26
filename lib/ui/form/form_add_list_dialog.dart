@@ -1,21 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
-import 'package:todo_app/data/models/todo.dart';
+import 'package:todo_app/data/todo.dart';
 import 'package:todo_app/ui/alert/success_added_dialog.dart';
 import 'package:uuid/uuid.dart';
 
-void formAddListDialog(BuildContext context) => showDialog(
+void formAddListDialog(BuildContext context, [Todo? todo]) => showDialog(
       context: context,
       builder: (BuildContext context) => Dialog(
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
         ),
-        child: FormAddList(),
+        child: FormAddList(todo: todo),
       ),
     );
 
 class FormAddList extends StatefulWidget {
-  FormAddList({Key? key}) : super(key: key);
+  FormAddList({Key? key, this.todo}) : super(key: key);
+  final Todo? todo;
 
   @override
   _FormAddListState createState() => _FormAddListState();
@@ -24,6 +25,15 @@ class FormAddList extends StatefulWidget {
 class _FormAddListState extends State<FormAddList> {
   TextEditingController titleController = TextEditingController();
   TextEditingController bodyController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.todo != null) {
+      titleController.text = widget.todo!.title;
+      bodyController.text = widget.todo!.body;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

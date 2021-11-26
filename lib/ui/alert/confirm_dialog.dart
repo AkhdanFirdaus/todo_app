@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:hive/hive.dart';
+import 'package:todo_app/data/todo.dart';
 import 'package:todo_app/ui/alert/success_deleted_dialog.dart';
 
-void confirmDialog(BuildContext context) => showDialog(
+void confirmDialog(BuildContext context, int index) => showDialog(
       context: context,
       builder: (BuildContext context) => AlertDialog(
         content: Column(
@@ -42,7 +44,12 @@ void confirmDialog(BuildContext context) => showDialog(
               ),
               SizedBox(width: 8),
               ElevatedButton(
-                onPressed: () => successDeletedDialog(context),
+                onPressed: () {
+                  Box<Todo?> todoBox = Hive.box<Todo?>('todoBox');
+                  todoBox.deleteAt(index).then((value) {
+                    successDeletedDialog(context);
+                  });
+                },
                 child: Text("Yes, delete it"),
                 style: ElevatedButton.styleFrom(
                   shape: RoundedRectangleBorder(
